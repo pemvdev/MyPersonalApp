@@ -1,0 +1,54 @@
+.auth-page {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 36px;
+  border: 1px solid var(--color-line);
+  border-radius: 20px;
+  background: var(--color-surface);
+}
+.auth-card .eyebrow {
+  color: var(--color-green);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+}
+.auth-card h1 {
+  font-family: var(--font-editorial);
+  font-size: clamp(28px, 6vw, 36px);
+  line-height: 1.15;
+  margin: 20px 0;
+}
+.auth-card h2 {
+  font-size: 22px;
+  overflow-wrap: anywhere;
+}
+.auth-card p {
+  line-height: 1.6;
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+}
+.auth-card button {
+  width: 100%;
+  padding: 14px 18px;
+  margin-top: 16px;
+  border-radius: 10px;
+  border: 1px solid var(--color-ink);
+  background: var(--color-ink);
+  color: var(--color-surface);
+  font: inherit;
+  font-weight: 600;
+}
+.auth-card button.secondary {
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+.auth-card [role='alert'] {
+  color: var(--color-danger);
+}

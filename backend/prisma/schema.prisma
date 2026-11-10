@@ -1,0 +1,133 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @db.Uuid
+  email     String?  @db.VarChar(320)
+  name      String?  @db.VarChar(200)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  workspace Workspace?
+
+  @@map("app_users")
+}
+
+enum WorkspaceType {
+  STANDARD
+  FINANCIAL
+}
+
+enum TaskCategory {
+  Work
+  Health
+  Personal
+}
+
+enum TransactionKind {
+  income
+  food
+  housing
+  transport
+  other
+}
+
+model Workspace {
+  id               String              @id @default(uuid()) @db.Uuid
+  name             String              @default("Personal workspace") @db.VarChar(100)
+  type             WorkspaceType       @default(FINANCIAL)
+  ownerId          String              @unique @map("owner_id") @db.Uuid
+  owner            User                @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  financialProfile FinancialWorkspace?
+  tasks            Task[]
+  bookmarks        Bookmark[]
+  focusSessions    FocusSession[]
+  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("workspaces")
+}
+
+model FinancialWorkspace {
+  id           String                 @id @default(uuid()) @db.Uuid
+  workspaceId  String                 @unique @map("workspace_id") @db.Uuid
+  workspace    Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  transactions FinancialTransaction[]
+  budgets      Budget[]
+
+  @@map("financial_workspaces")
+}
+
+model Task {
+  clientId        String       @map("client_id") @db.Uuid
+  id              String       @id @default(uuid()) @db.Uuid
+  workspaceId     String       @map("workspace_id") @db.Uuid
+  workspace       Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  title           String       @db.VarChar(100)
+  dueDate         DateTime     @map("due_date") @db.Date
+  scheduledTime   String       @map("scheduled_time") @db.VarChar(5)
+  durationMinutes Int          @default(30) @map("duration_minutes")
+  category        TaskCategory @default(Work)
+  isComplete      Boolean      @default(false) @map("is_complete")
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([workspaceId, clientId])
+  @@index([workspaceId, dueDate, scheduledTime, id])
+  @@map("tasks")
+}
+
+model FinancialTransaction {
+  clientId             String             @map("client_id") @db.Uuid
+  id                   String             @id @default(uuid()) @db.Uuid
+  financialWorkspaceId String             @map("financial_workspace_id") @db.Uuid
+  financialWorkspace   FinancialWorkspace @relation(fields: [financialWorkspaceId], references: [id], onDelete: Restrict)
+  title                String             @db.VarChar(100)
+  amountInCents        Int                @map("amount_in_cents")
+  kind                 TransactionKind
+  occurredOn           DateTime           @map("occurred_on") @db.Date
+  createdAt            DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([financialWorkspaceId, clientId])
+  @@index([financialWorkspaceId, occurredOn, createdAt, id])
+  @@map("financial_transactions")
+}
+
+model Budget {
+  id                   String             @id @default(uuid()) @db.Uuid
+  financialWorkspaceId String             @map("financial_workspace_id") @db.Uuid
+  financialWorkspace   FinancialWorkspace @relation(fields: [financialWorkspaceId], references: [id], onDelete: Restrict)
+  kind                 TransactionKind
+  amountInCents        Int                @map("amount_in_cents")
+
+  @@unique([financialWorkspaceId, kind])
+  @@map("budgets")
+}
+
+model Bookmark {
+  workspaceId String    @map("workspace_id") @db.Uuid
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  articleId   String    @map("article_id") @db.VarChar(32)
+
+  @@id([workspaceId, articleId])
+  @@map("bookmarks")
+}
+
+model FocusSession {
+  clientId        String    @map("client_id") @db.Uuid
+  id              String    @id @default(uuid()) @db.Uuid
+  workspaceId     String    @map("workspace_id") @db.Uuid
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  durationSeconds Int       @map("duration_seconds")
+  completedOn     DateTime  @map("completed_on") @db.Date
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([workspaceId, clientId])
+  @@index([workspaceId, completedOn])
+  @@map("focus_sessions")
+}
