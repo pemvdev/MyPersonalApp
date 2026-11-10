@@ -1,4 +1,4 @@
-# Task Manager
+# MyPersonalApp
 
 React/Vite frontend and NestJS backend, using **Supabase PostgreSQL**, **Prisma ORM 7**, and **Supabase Auth with Google**.
 
