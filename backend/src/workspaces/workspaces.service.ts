@@ -32,7 +32,7 @@ export class WorkspacesService {
     const money = (cents: number) =>
       new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: 'USD',
+        currency: 'BRL',
       }).format(cents / 100);
     const articles = [
       {

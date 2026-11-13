@@ -15,7 +15,7 @@ import {
   Min,
   NotEquals,
 } from 'class-validator';
-import { TaskCategory, TransactionKind } from '../../generated/prisma/enums';
+import { RepeatFrequency, TaskCategory, TransactionKind } from '../../generated/prisma/enums';
 
 export class DayDto {
   @Matches(/^\d{4}-\d{2}-\d{2}$/)
@@ -60,6 +60,22 @@ export class CreateTaskDto extends DayDto {
   @Min(1)
   @Max(1440)
   declare durationMinutes: number;
+
+  @IsOptional()
+  @IsEnum(RepeatFrequency)
+  declare repeatFrequency?: RepeatFrequency;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(365)
+  declare repeatInterval?: number;
+
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  @IsDateString({ strict: true })
+  declare repeatUntil?: string;
 }
 
 export class UpdateTaskDto {
@@ -84,6 +100,22 @@ class TransactionFieldsDto extends DayDto {
 
   @IsEnum(TransactionKind)
   declare kind: TransactionKind;
+
+  @IsOptional()
+  @IsEnum(RepeatFrequency)
+  declare repeatFrequency?: RepeatFrequency;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(365)
+  declare repeatInterval?: number;
+
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  @IsDateString({ strict: true })
+  declare repeatUntil?: string;
 }
 
 export class CreateTransactionDto extends TransactionFieldsDto {

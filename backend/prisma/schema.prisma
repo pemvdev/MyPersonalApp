@@ -39,6 +39,12 @@ enum TransactionKind {
   other
 }
 
+enum RepeatFrequency {
+  daily
+  weekly
+  monthly
+}
+
 model Workspace {
   id               String              @id @default(uuid()) @db.Uuid
   name             String              @default("Personal workspace") @db.VarChar(100)
@@ -74,10 +80,17 @@ model Task {
   scheduledTime   String       @map("scheduled_time") @db.VarChar(5)
   durationMinutes Int          @default(30) @map("duration_minutes")
   category        TaskCategory @default(Work)
+  isFrequent      Boolean      @default(false) @map("is_frequent")
+  repeatFrequency RepeatFrequency? @map("repeat_frequency")
+  repeatInterval  Int          @default(1) @map("repeat_interval")
+  repeatUntil     DateTime?    @map("repeat_until") @db.Date
+  recurrenceSourceId String?   @map("recurrence_source_id") @db.Uuid
+  recurrenceDate  DateTime?    @map("recurrence_date") @db.Date
   isComplete      Boolean      @default(false) @map("is_complete")
   createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@unique([workspaceId, clientId])
+  @@unique([recurrenceSourceId, recurrenceDate])
   @@index([workspaceId, dueDate, scheduledTime, id])
   @@map("tasks")
 }
@@ -91,9 +104,15 @@ model FinancialTransaction {
   amountInCents        Int                @map("amount_in_cents")
   kind                 TransactionKind
   occurredOn           DateTime           @map("occurred_on") @db.Date
+  repeatFrequency      RepeatFrequency?   @map("repeat_frequency")
+  repeatInterval       Int                @default(1) @map("repeat_interval")
+  repeatUntil          DateTime?          @map("repeat_until") @db.Date
+  recurrenceSourceId   String?            @map("recurrence_source_id") @db.Uuid
+  recurrenceDate       DateTime?          @map("recurrence_date") @db.Date
   createdAt            DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@unique([financialWorkspaceId, clientId])
+  @@unique([recurrenceSourceId, recurrenceDate])
   @@index([financialWorkspaceId, occurredOn, createdAt, id])
   @@map("financial_transactions")
 }

@@ -1,6 +1,6 @@
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
-  currency: 'USD',
+  currency: 'BRL',
 })
 
 export function formatMoney(amountInCents: number) {

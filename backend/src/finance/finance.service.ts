@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkspaceAccessService } from '../workspaces/workspace-access.service';
+import { occurrenceDates, recurrenceClientId } from '../tasks/recurrence';
 import {
   CreateTransactionDto,
   SetBudgetDto,
@@ -44,6 +45,9 @@ export class FinanceService {
         amountInCents: dto.amountInCents,
         kind: dto.kind,
         occurredOn: new Date(dto.date),
+        repeatFrequency: dto.repeatFrequency,
+        repeatInterval: dto.repeatFrequency ? (dto.repeatInterval ?? 1) : 1,
+        repeatUntil: dto.repeatUntil ? new Date(dto.repeatUntil) : null,
       },
       select: { id: true },
     });
@@ -119,6 +123,7 @@ export class FinanceService {
     const nextMonth = new Date(
       Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1),
     );
+    await this.materializeRecurring(financialId, nextMonth);
     const rangeStart = new Date(
       Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 5, 1),
     );
@@ -212,5 +217,44 @@ export class FinanceService {
       })),
       hasMore: page * 50 < total,
     };
+  }
+
+  private async materializeRecurring(financialWorkspaceId: string, through: Date) {
+    const rules = await this.prisma.financialTransaction.findMany({
+      where: {
+        financialWorkspaceId,
+        repeatFrequency: { not: null },
+        occurredOn: { lt: through },
+      },
+    });
+    for (const rule of rules) {
+      for (const occurredOn of occurrenceDates(
+        rule.occurredOn,
+        rule.repeatFrequency!,
+        rule.repeatInterval,
+        rule.repeatUntil,
+        new Date(through.getTime() - 86400000),
+      )) {
+        await this.prisma.financialTransaction.upsert({
+          where: {
+            recurrenceSourceId_recurrenceDate: {
+              recurrenceSourceId: rule.id,
+              recurrenceDate: occurredOn,
+            },
+          },
+          update: {},
+          create: {
+            financialWorkspaceId,
+            clientId: recurrenceClientId(),
+            title: rule.title,
+            amountInCents: rule.amountInCents,
+            kind: rule.kind,
+            occurredOn,
+            recurrenceSourceId: rule.id,
+            recurrenceDate: occurredOn,
+          },
+        });
+      }
+    }
   }
 }

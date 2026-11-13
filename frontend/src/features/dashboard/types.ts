@@ -29,6 +29,7 @@ export interface BriefArticle {
 
 export type TaskCategory = Task['category']
 export type TransactionKind = Transaction['kind']
+export type RepeatFrequency = 'daily' | 'weekly' | 'monthly'
 export interface CreateTaskInput {
   clientId: string
   title: string
@@ -36,6 +37,9 @@ export interface CreateTaskInput {
   date: string
   durationMinutes: number
   category: TaskCategory
+  repeatFrequency?: RepeatFrequency
+  repeatInterval?: number
+  repeatUntil?: string
 }
 export interface CreateTransactionInput {
   clientId: string
@@ -43,6 +47,9 @@ export interface CreateTransactionInput {
   date: string
   amountInCents: number
   kind: TransactionKind
+  repeatFrequency?: RepeatFrequency
+  repeatInterval?: number
+  repeatUntil?: string
 }
 export type UpdateTransactionInput = Omit<CreateTransactionInput, 'clientId'>
 export interface FinanceMonth {

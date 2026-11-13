@@ -9,6 +9,7 @@ import type {
   TransactionKind,
   Transaction,
   UpdateTransactionInput,
+  RepeatFrequency,
 } from '../types'
 import { parseAmountInCents } from '../format'
 
@@ -44,6 +45,9 @@ export function EntryModal({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [time, setTime] = useState('09:00')
   const [category, setCategory] = useState<Task['category']>('Work')
+  const [repeatFrequency, setRepeatFrequency] = useState<RepeatFrequency | ''>('')
+  const [repeatInterval, setRepeatInterval] = useState(1)
+  const [repeatUntil, setRepeatUntil] = useState('')
   const [amount, setAmount] = useState(
     transaction
       ? (Math.abs(transaction.amountInCents) / 100).toFixed(2)
@@ -72,6 +76,9 @@ export function EntryModal({
           date: entryDate,
           durationMinutes,
           category,
+          ...(repeatFrequency
+            ? { repeatFrequency, repeatInterval, ...(repeatUntil ? { repeatUntil } : {}) }
+            : {}),
         })
       } else {
         const cents = parseAmountInCents(amount)
@@ -86,6 +93,9 @@ export function EntryModal({
           date: entryDate,
           amountInCents: isIncome ? cents : -cents,
           kind: isIncome ? 'income' : expenseKind,
+          ...(repeatFrequency
+            ? { repeatFrequency, repeatInterval, ...(repeatUntil ? { repeatUntil } : {}) }
+            : {}),
         }
         if (transaction) {
           await onUpdateTransaction(transaction.id, transactionInput)
@@ -271,6 +281,24 @@ export function EntryModal({
               </select>
             </div>
           )}
+          <div className="space-y-3 rounded-lg bg-soft p-3">
+            <label className="field-label" htmlFor="entry-repeat">Repeat</label>
+            <select id="entry-repeat" className="field" value={repeatFrequency} onChange={(event) => setRepeatFrequency(event.target.value as RepeatFrequency | '')}>
+              <option value="">Does not repeat</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+            {repeatFrequency && <>
+              <label className="field-label" htmlFor="entry-repeat-interval">Every</label>
+              <div className="flex items-center gap-2">
+                <input id="entry-repeat-interval" className="field w-20" type="number" min="1" max="365" value={repeatInterval} onChange={(event) => setRepeatInterval(event.target.valueAsNumber)} />
+                <span className="text-xs text-muted">{repeatFrequency === 'daily' ? 'day(s)' : repeatFrequency === 'weekly' ? 'week(s)' : 'month(s)'}</span>
+              </div>
+              <label className="field-label" htmlFor="entry-repeat-until">End date (optional)</label>
+              <input id="entry-repeat-until" className="field" type="date" min={entryDate} value={repeatUntil} onChange={(event) => setRepeatUntil(event.target.value)} />
+            </>}
+          </div>
           {error && (
             <p id="entry-error" role="alert" className="text-xs text-danger">
               {error}

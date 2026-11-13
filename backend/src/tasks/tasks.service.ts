@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkspaceAccessService } from '../workspaces/workspace-access.service';
+import { occurrenceDates, recurrenceClientId } from './recurrence';
 import {
   CreateFocusSessionDto,
   CreateTaskDto,
@@ -24,6 +25,7 @@ export class TasksService {
   ) {}
 
   async getDay(workspaceId: string, date: Date, page: number) {
+    await this.materializeRecurring(workspaceId, date);
     const where = { workspaceId, dueDate: date };
     const [tasks, total, completed, focus] = await Promise.all([
       this.prisma.task.findMany({
@@ -71,9 +73,53 @@ export class TasksService {
         scheduledTime: dto.time,
         durationMinutes: dto.durationMinutes,
         category: dto.category,
+        isFrequent: Boolean(dto.repeatFrequency),
+        repeatFrequency: dto.repeatFrequency,
+        repeatInterval: dto.repeatFrequency ? (dto.repeatInterval ?? 1) : 1,
+        repeatUntil: dto.repeatUntil ? new Date(dto.repeatUntil) : null,
       },
       select: { id: true },
     });
+  }
+
+  private async materializeRecurring(workspaceId: string, through: Date) {
+    const rules = await this.prisma.task.findMany({
+      where: {
+        workspaceId,
+        repeatFrequency: { not: null },
+        dueDate: { lt: through },
+      },
+    });
+    for (const rule of rules) {
+      for (const dueDate of occurrenceDates(
+        rule.dueDate,
+        rule.repeatFrequency!,
+        rule.repeatInterval,
+        rule.repeatUntil,
+        through,
+      )) {
+        await this.prisma.task.upsert({
+          where: {
+            recurrenceSourceId_recurrenceDate: {
+              recurrenceSourceId: rule.id,
+              recurrenceDate: dueDate,
+            },
+          },
+          update: {},
+          create: {
+            workspaceId,
+            clientId: recurrenceClientId(),
+            title: rule.title,
+            dueDate,
+            scheduledTime: rule.scheduledTime,
+            durationMinutes: rule.durationMinutes,
+            category: rule.category,
+            recurrenceSourceId: rule.id,
+            recurrenceDate: dueDate,
+          },
+        });
+      }
+    }
   }
 
   async update(userId: string, taskId: string, dto: UpdateTaskDto) {
